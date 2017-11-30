@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=utf-8"/>
+  <script type="text/javascript" src="bower_components/jquery/dist/jquery.min.js"></script>
+  <script src="bower_components/d3/d3.min.js"></script>
+  <style type="text/css">
+
+    body{
+      background-color: #505050;
+      padding:10px;
+    }
+
+    svg {  
+      font-size: 12px;
+      margin-top: 0px;
+      fill:rgba(20,24,29,0.61);
+      padding-top: 10px;
+      margin-left:20px;
+    }
+
+    g {
+      overflow: visible;
+    }
+
+    text {
+      z-index: 0;
+      fill:white;
+    }
+
+    .axis{
+    }
+
+    .axis path, .axis line {
+      fill: none;
+      stroke-width: .5px;
+    }
+
+    .x.axis path {
+      stroke: #000;
+    }
+
+    .x.axis line {
+      stroke: #fff;
+      stroke-opacity: .5;
+    }
+
+    .y.axis{
+      position: fixed;
+    }
+
+    .y.axis line {
+      stroke: #ddd;
+      stroke-opacity: .5;      
+    }
+
+    path.line {
+      fill: none;
+      stroke: #000;
+      stroke-width: .5px;
+    }
+
+    rect.pane {
+      cursor: move;
+      fill: none;
+      pointer-events: all;
+    }
+
+    .area-good{
+      fill:rgba(0,172,101,0.61);
+    }
+
+    .area-moderate{
+      fill:rgba(138,176,87,0.67);
+    }
+
+    .unhealthy-for-sensitive{
+      fill:rgba(250,255,0,0.61);
+    }
+
+    .unhealthy-for-general{
+      fill:rgba(236,118,0,0.61);
+    }
+
+    .very-unhealthy{
+      fill:rgba(255,0,0,0.61);
+    }
+
+    .beyong-index{
+      fill:rgba(89,89,89,0.61);
+    }
+
+    .color-div{
+      display: flex;
+      margin-top: 5px;
+    }
+
+    .color-code{
+      width: 20px;
+      height:20px;
+      display: inline-block;
+    }
+
+    .color-text{
+      display: inline-block;
+      margin-left: 6px;
+      align-items: center;
+    }
+
+    .title{
+      color:white;
+      padding: 10px;
+      float:left;
+    }
+    .history{
+      padding-top: 5px
+    }
+    .history-div{
+      color:white;
+      width:200px;
+      margin-left: 120px;
+      float: left;
+      height:10 5px;
+      background-color: #2d2d2d;
+      font-size:14px;
+      border-radius: 2px;
+    }
+    .value{
+      margin-left: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="title">
+    <h3>Zoomable Visualization</h3>
+    <h2>Beijing PM2.5 from 2011 - 2015</h2>
+    <hr/>
+    <h5>How to play: Zoom and Pan on the timeline to check details</h5>
+  </div>
+  <div class="history-div">
+    <div style="font-size:14px;padding:10px;background-color: #606060">
+      Today's PM2.5 in 2011-2015
+    </div>
+    <div style="padding:10px 10px;">
+    <div class="history">
+      <span id="date1">2011-1-1</span>
+      <span class="value" id="value1"></span>
+    </div>
+    <div class="history">
+      <span id="date2">2011-1-1</span>
+      <span class="value" id="value2"></span>
+    </div>
+    <div class="history">
+      <span id="date3">2011-1-1</span>
+      <span class="value" id="value3"></span>
+    </div>
+    <div class="history">
+      <span id="date4">2011-1-1</span>
+      <span class="value" id="value4"></span>
+    </div>
+    <div class="history">
+      <span id="date5">2011-1-1</span>
+      <span class="value" id="value5"></span>
+    </div>
+    </div>
+  </div>
+  <div style="float:right;color:white">
+    <div class="color-div">
+      <div class="color-code" style="background-color: rgba(255,0,0,0.61)"></div>
+      <div class="color-text">Very Unhealthy(300-500)</div>
+    </div>   
+    <div class="color-div">
+      <div class="color-code" style="background-color: rgba(236,118,0,0.61)"></div>
+      <div class="color-text">Unhealthy for general groups(151-300) </div>
+    </div>    
+    <div class="color-div">
+      <div class="color-code" style="background-color: rgba(250,255,0,0.61)"></div>
+      <div class="color-text">Unhealthy for sensitive groups(100-150)</div>
+    </div>      
+    <div class="color-div">
+      <div class="color-code" style="background-color: rgba(138,176,87,0.67)"></div>
+      <div class="color-text">Group Moderate(51-100)</div>
+    </div>     
+    <div class="color-div">
+      <div class="color-code" style="background-color: rgba(0,172,101,0.61)"></div>
+      <div class="color-text">Good(0-50)</div>
+    </div>
+
+  </div> 
+
+  <script type="text/javascript">
+
+    var air_data = [];
+    var w = 1400,
+    h = 500,
+        parse = d3.time.format("%Y-%m-%d").parse;//parser for the date format
+
+        var xscale = d3.time.scale().domain([new Date(2010, 10, 0), new Date(2016, 0, 0)]).range([0, w]),
+        yscale = d3.scale.linear().domain([0, 500]).range([h, 0]);  
+
+        xAxis = d3.svg.axis().scale(xscale).orient("bottom").tickSize(-h, 0).tickPadding(6); 
+        yAxis = d3.svg.axis().scale(yscale).orient("right").tickSize(-w).tickPadding(6);
+
+        var line = d3.svg.line()
+        .interpolate("step-after")
+        .x(function(d) { return xscale(d.x);})
+        .y(function(d) { return yscale(d.y);});
+
+        var area = d3.svg.area()
+        .interpolate("step-after")
+        .x(function(d) { return xscale(d.x); })
+        .y0(h)
+        .y1(function(d) { return yscale(d.y); });
+
+
+        var svg = d3.select("body").append("svg:svg")
+        .attr("width", w)
+        .attr("height", h+50);
+
+        var zoom = d3.behavior.zoom().on("zoom", draw);
+
+    //.attr("transform", "translate(" + w + " ,0)");
+    svg.append("svg:rect")
+    .attr("class", "area-good")
+    .attr("width", w)
+    .attr("height", 50)
+    .attr("y",450)
+
+    svg.append("svg:rect")
+    .attr("class", "area-moderate")
+    .attr("width", w)
+    .attr("height", 50)
+    .attr("y",400)
+
+    svg.append("svg:rect")
+    .attr("class", "unhealthy-for-sensitive")
+    .attr("width", w)
+    .attr("height", 50)
+    .attr("y",350)
+
+    svg.append("svg:rect")
+    .attr("class", "unhealthy-for-general")
+    .attr("width", w)
+    .attr("height", 150)
+    .attr("y",200)
+
+    svg.append("svg:rect")
+    .attr("class", "very-unhealthy")
+    .attr("width", w)
+    .attr("height", 200)
+    .attr("y",0)
+
+    
+    svg.append("svg:rect")
+    .attr("class", "pane")
+    .attr("width", w)
+    .attr("height", h)
+    .call(zoom);
+
+    zoom.x(xscale);
+
+
+    svg.append("svg:path")
+    .attr("class", "area")
+
+    svg.append("svg:g")
+    .attr("class", "x axis")
+    .attr("transform", "translate(0," + h + ")");
+
+    svg.append("svg:g")
+    .attr("class","y axis");
+
+    svg.append("text")
+    .text("Data source: Beijing - US Department of State Air Quality Monitoring http://www.stateair.net/web/post/1/1.html")
+    .attr("y",550)
+
+
+    d3.csv("beijing.csv", function(data) {
+
+      var valid_days = 0;
+      var daily_value = 0;
+      var current_date = "2011-1-1";
+
+      data.forEach(function(d){
+
+        var date = d.Year+"-"+d.Month+"-"+d.Day;
+
+        if(current_date == date){
+          if(d.Duration == "Valid"){
+            daily_value+= parseInt(d.value);
+            valid_days++;
+          } 
+        }else{
+          if(valid_days != 0){
+            daily_value /= valid_days;
+          }
+          //console.log(valid_days+" "+daily_value+" "+current_date);
+          var daily_value_str = parseInt(daily_value).toString();
+            //console.log(daily_value_str+" "+current_date);
+            air_data.push({
+              x: parse(current_date),
+              y: parseInt(daily_value).toString()
+            });
+          //console.log(parse(current_date)+" "+parseInt(daily_value).toString());
+          valid_days = 1;
+          if(d.Duration == "Valid"){
+            daily_value = parseInt(d.value);
+          }else{
+            daily_value = 0;
+          }
+          current_date = date;
+        }
+      });
+
+      svg.select("path.area").data([air_data]);
+
+      draw(); 
+
+
+      $(document).ready(function(){
+        var today = new Date();
+        var m = today.getMonth()+1;
+        var d = today.getDate();
+        var y = 2011;
+
+        for(var y = 2011; y < 2016; y++){
+          //var dates = parse(y+"-"+m+"-"+d);
+          var dates = y+"-"+m+"-"+d;
+
+          var history = $.grep(air_data, function(n) {
+            return n.x.toString() ==  parse(dates).toString();
+          })[0];
+
+          var id = y-2010;
+          $("#date"+id).text(dates);
+          $("#value"+id).text(history.y);
+        }
+
+
+      });
+    });
+    
+    
+    function draw() {
+      //console.log ("drawing");
+
+      svg.select("path.area").attr("d", area);
+      svg.select("g.x.axis").call(xAxis);
+      svg.select("g.y.axis").call(yAxis);
+
+    }
+    
+    function zoom() {
+      //console.log("zooming");
+      d3.event.transform(xscale); // TODO d3.behavior.zoom should support extents
+      draw();
+    }
+    
+  </script>
+</body>
+</html>
