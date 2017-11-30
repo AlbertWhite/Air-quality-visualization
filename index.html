@@ -9,6 +9,8 @@
     body{
       background-color: #505050;
       padding:10px;
+      font-family: arial;
+      font-size: 15px;
     }
 
     svg {  
@@ -120,7 +122,7 @@
       width:200px;
       margin-left: 120px;
       float: left;
-      height:10 5px;
+      height:auto;
       background-color: #2d2d2d;
       font-size:14px;
       border-radius: 2px;
@@ -128,6 +130,14 @@
     .value{
       margin-left: 10px;
     }
+
+    @media only screen and (max-width: 1100px){
+      .history-div{
+        width: 130px;
+        margin-left: 40px;
+      }
+    }
+
   </style>
 </head>
 <body>
@@ -161,6 +171,10 @@
     <div class="history">
       <span id="date5">2011-1-1</span>
       <span class="value" id="value5"></span>
+    </div>
+    <div class="history">
+      <span id="date6">2011-1-1</span>
+      <span class="value" id="value6"></span>
     </div>
     </div>
   </div>
@@ -323,7 +337,7 @@
         var d = today.getDate();
         var y = 2011;
 
-        for(var y = 2011; y < 2016; y++){
+        for(var y = 2011; y < 2017; y++){
           //var dates = parse(y+"-"+m+"-"+d);
           var dates = y+"-"+m+"-"+d;
 
